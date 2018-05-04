@@ -1,29 +1,22 @@
-# -*- coding: utf-8 -*-
+import scrapy
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 
 
-class DigitalbookspiderSpider(CrawlSpider):
+class DigitalBookSpider(CrawlSpider):
     name = "DigitalBookSpider"
-    allowed_domains = ["kompass.com"]
-
+    allowed_domains = ['www.pagesjaunes.fr', 'https://www.pagesjaunes.fr', 'http://www.pagesjaunes.fr']
     start_urls = [
-        'https://fr.kompass.com/searchCompanies?acClassif=&localizationCode=FR_72_33_33063&localizationLabel=Bordeaux&localizationType=town&text=restaurant&searchType=SUPPLIER'
+        'https://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=coiffeur&ou=33000&proximite=0',
+        'http://www.pagesjaunes.fr/annuaire/chercherlespros?quoiqui=coiffeur&ou=33000&proximite=0'
     ]
-
-    def start_requests(self):
-        headers= {'User-Agent': 'Mozilla/5.0 (Linux; <Android Version>;) AppleWebKit/<WebKit Rev> (KHTML, like Gecko) Chrome/<Chrome Rev> Mobile Safari/<WebKit Rev>'}
-        for url in self.start_urls:
-            yield Request(url, headers=headers)
-
     rules = (
-        Rule(LinkExtractor(allow=(), restrict_css=('.pn')),
-             callback="parse_item",
-             follow=True),)
- 
-    def parse_item(self, response):
-        print('Processing..' + response.url)
-        # print(response.text)
+    Rule(LinkExtractor(), callback='parse_page', follow=True),
+)
 
     def parse(self, response):
-        pass
+        for h3 in response.xpath('//h3').extract():
+            yield {"title": h3}
+
+        for url in response.xpath('//a/@href').extract():
+            yield scrapy.Request(url, callback=self.parse)
